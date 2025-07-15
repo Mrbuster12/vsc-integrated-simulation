@@ -1,0 +1,5 @@
+# DSL Logic for: Hopelessness Episode
+Trigger: Activated
+Q1: What brings you here?
+Q2: How do you feel?
+Q3: What support would help?

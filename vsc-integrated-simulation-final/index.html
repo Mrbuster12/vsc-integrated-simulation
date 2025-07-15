@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Surfboard Simulation – Voice Enabled</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #e0f7fa;
+      padding: 40px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 24px;
+    }
+    select, button {
+      font-size: 16px;
+      padding: 10px;
+      margin: 10px;
+    }
+    #output {
+      margin-top: 30px;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #ccc;
+      display: none;
+      text-align: left;
+    }
+    #mic-status {
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏄 Virtual Surfboard Clinician Simulation</h1>
+  <p>Select your scenario and clinician framework</p>
+
+  <label for="scenario">Scenario:</label><br>
+  <select id="scenario"></select><br>
+
+  <label for="clinician">Clinician Style:</label><br>
+  <select id="clinician"></select><br>
+
+  <button onclick="startSimulation()">Start Simulation</button>
+  <button onclick="toggleMic()">🎙️ Talk to Clinician</button>
+
+  <div id="output">
+    <h3>Session Output</h3>
+    <p><strong>Transcribed Input:</strong> <span id="transcript"></span></p>
+    <p><strong>Simulated Clinician Reply:</strong> <span id="reply"></span></p>
+    <p><strong>Mic Status:</strong> <span id="mic-status">Inactive</span></p>
+  </div>
+
+  <script>
+    const scenarioSelect = document.getElementById("scenario");
+    const clinicianSelect = document.getElementById("clinician");
+    const transcriptEl = document.getElementById("transcript");
+    const replyEl = document.getElementById("reply");
+    const micStatus = document.getElementById("mic-status");
+    let recognition;
+    let listening = false;
+
+    async function populateDropdowns() {
+      const scenarioRes = await fetch("ScenariosList.json");
+      const clinicianRes = await fetch("ClinicianList.json");
+      const scenarios = await scenarioRes.json();
+      const clinicians = await clinicianRes.json();
+
+      scenarios.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.file;
+        opt.textContent = s.name;
+        scenarioSelect.appendChild(opt);
+      });
+
+      clinicians.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.code;
+        opt.textContent = c.name;
+        clinicianSelect.appendChild(opt);
+      });
+    }
+
+    function startSimulation() {
+      document.getElementById("output").style.display = "block";
+      transcriptEl.textContent = "";
+      replyEl.textContent = "Clinician is listening... press Talk to begin.";
+    }
+
+    function toggleMic() {
+      if (!('webkitSpeechRecognition' in window)) {
+        alert("Speech recognition not supported in this browser.");
+        return;
+      }
+
+      if (!recognition) {
+        recognition = new webkitSpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = false;
+        recognition.onresult = function(event) {
+          const userSpeech = event.results[0][0].transcript;
+          transcriptEl.textContent = userSpeech;
+          generateReply(userSpeech);
+        };
+        recognition.onend = function() {
+          listening = false;
+          micStatus.textContent = "Inactive";
+        };
+      }
+
+      if (!listening) {
+        recognition.start();
+        listening = true;
+        micStatus.textContent = "Listening...";
+      } else {
+        recognition.stop();
+      }
+    }
+
+    function generateReply(userInput) {
+      const style = clinicianSelect.value;
+      let response = "";
+
+      switch (style) {
+        case "CBT":
+          response = "Let's examine those thoughts together. Can you identify the core belief behind what you said?";
+          break;
+        case "MI":
+          response = "It sounds like you're considering change. What would it take for you to move one step forward?";
+          break;
+        case "Trauma":
+          response = "Thank you for sharing that. Let's slow down and make sure you're feeling safe right now.";
+          break;
+        case "Faith":
+          response = "How does your spiritual belief help you interpret what you're going through?";
+          break;
+        case "EMDR":
+          response = "Would you like to begin reprocessing that memory together?";
+          break;
+        case "MFT":
+          response = "How do you think this affects the family dynamic?";
+          break;
+        case "DBT":
+          response = "Let’s try using a mindfulness skill to regulate that emotion.";
+          break;
+        case "ACT":
+          response = "Can we make room for that feeling without letting it dominate your actions?";
+          break;
+        case "IFS":
+          response = "Which part of you feels that most strongly right now?";
+          break;
+        default:
+          response = "Thank you for sharing that. Let's keep exploring.";
+      }
+
+      replyEl.textContent = response;
+      speak(response);
+    }
+
+    function speak(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1;
+      utter.pitch = 1;
+      utter.lang = 'en-US';
+      speechSynthesis.speak(utter);
+    }
+
+    populateDropdowns();
+  </script>
+</body>
+</html>
